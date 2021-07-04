@@ -156,6 +156,9 @@ class Env:
             frame = self.save_render()
             info['frame'] = frame
 
+        self.local_obstacles = []
+        self.ref_point = [self.robot_pos[0], self.robot_pos[1]]
+
         return self.observation(), info
 
     def step(self, action):
@@ -291,55 +294,36 @@ class Env:
         return obs_dict
 
     def lidar(self):
-        """
-        h, w = self.robot_pos[0] * self.inv_scale, self.robot_pos[1] * self.inv_scale
-        min_h = int(max(0, h-self.lidar_range_pixel))
-        max_h = int(min(h+self.lidar_range_pixel+1, self.map_img.shape[0]))
-        min_w = int(max(0, w-self.lidar_range_pixel))
-        max_w = int(min(w+self.lidar_range_pixel+1, self.map_img.shape[1]))
-
-        padding = 2
-        patch = np.zeros((self.lidar_range_pixel*2 + 1 + padding*2, self.lidar_range_pixel*2 + 1 + padding*2), dtype=np.uint8)
-        agent_patch = self.map_img[min_h:max_h, min_w:max_w]
-        start_h = int(max(self.lidar_range_pixel-h, 0) + 2)
-        start_w = int(max(self.lidar_range_pixel-w, 0) + 2)
-        patch[start_h: start_h + agent_patch.shape[0], start_w: start_w + agent_patch.shape[1]]
-        """
-
         self.lidar_obstacle = np.full((self.lidar_delta,), self.lidar_range, dtype=np.float64)
         self.lidar_ped = np.full((self.lidar_delta,), self.lidar_range, dtype=np.float64)
-        
-        for coord in self.obstacles:
-            dh = coord[0] - self.robot_pos[0]
-            dw = coord[1] - self.robot_pos[1]
-            dist = np.linalg.norm(np.array([dh,dw]))
-            if dist > self.lidar_range: continue
-            th = math.atan2(dw, dh) - self.robot_orn
-            while th < 0: th += 2*np.pi
-            while th >= 2*np.pi: th -= 2*np.pi
-            th_index = int((th/(2 * np.pi))*self.lidar_delta)
-            if th_index == self.lidar_delta:th_index = 0
-            if self.lidar_obstacle[th_index] > dist: self.lidar_obstacle[th_index] = dist
 
-        """
-        obstacles, _ = cv2.findContours(patch, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        
-        if len(obstacles) > 0:
-            obstacles = np.concatenate(obstacles, 0).reshape(-1, 2)
-            print(obstacles.shape)
-
-            for i in range(obstacles.shape[0]):
-                dh = obstacles[i,0] - self.lidar_range_pixel*2 - padding
-                dw = obstacles[i,1] - self.lidar_range_pixel*2 - padding
+        if not self.local_obstacles or np.linalg.norm(np.array(self.robot_pos) - np.array(self.ref_point)) > 0.5:
+            self.ref_point = [self.robot_pos[0], self.robot_pos[1]]
+            self.local_obstacles = []
+            for coord in self.obstacles:
+                dh = coord[0] - self.robot_pos[0]
+                dw = coord[1] - self.robot_pos[1]
+                dist = np.linalg.norm(np.array([dh,dw]))
+                if dist > self.lidar_range: continue
+                self.local_obstacles.append(coord)
                 th = math.atan2(dw, dh) - self.robot_orn
                 while th < 0: th += 2*np.pi
                 while th >= 2*np.pi: th -= 2*np.pi
                 th_index = int((th/(2 * np.pi))*self.lidar_delta)
-                if th_index == self.lidar_delta:
-                    th_index = 0
-                if self.lidar_obstacle[th_index] > np.linalg.norm(np.array([dh,dw])): self.lidar_obstacle[th_index] = np.linalg.norm(np.array([dh,dw]))   
-        self.lidar_obstacle *= self.scale        
-        """
+                if th_index == self.lidar_delta:th_index = 0
+                if self.lidar_obstacle[th_index] > dist: self.lidar_obstacle[th_index] = dist
+        else:
+            for coord in self.local_obstacles:
+                dh = coord[0] - self.robot_pos[0]
+                dw = coord[1] - self.robot_pos[1]
+                dist = np.linalg.norm(np.array([dh,dw]))
+                if dist > self.lidar_range: continue
+                th = math.atan2(dw, dh) - self.robot_orn
+                while th < 0: th += 2*np.pi
+                while th >= 2*np.pi: th -= 2*np.pi
+                th_index = int((th/(2 * np.pi))*self.lidar_delta)
+                if th_index == self.lidar_delta:th_index = 0
+                if self.lidar_obstacle[th_index] > dist: self.lidar_obstacle[th_index] = dist            
 
         ped_states, _ = self.sim.get_states()
         ped_states = ped_states[:-1,:2]
