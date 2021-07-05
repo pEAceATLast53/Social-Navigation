@@ -75,14 +75,14 @@ class Env:
 
     def set_difficulty(self, type):
         if type == 'easy':
+            self.robot_target_dist_min = 3.0
+            self.robot_target_dist_max = 6.0
+        if type == 'medium':
             self.robot_target_dist_min = 6.0
             self.robot_target_dist_max = 9.0
-        if type == 'medium':
+        if type == 'difficult':
             self.robot_target_dist_min = 9.0
             self.robot_target_dist_max = 15.0
-        if type == 'difficult':
-            self.robot_target_dist_min = 15.0
-            self.robot_target_dist_max = 24.0
 
     def reset(self, map_name = None):
         if map_name is not None:
