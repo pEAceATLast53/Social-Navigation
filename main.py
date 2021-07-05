@@ -26,13 +26,13 @@ buffer_save_dir = './buffer/' + args.model_name
 if not os.path.isdir(buffer_save_dir): os.mkdir(buffer_save_dir)
 
 #difficulty_curriculum
-easy_to_medium = 1000
-medium_to_hard = 2000
+easy_to_medium = 3000
+medium_to_hard = 8000
 difficulty = args.difficulty
 
 #crowd_density_curriculum
-low_to_medium = 700
-medium_to_high = 4000
+low_to_medium = 2000
+medium_to_high = 10000
 crowd_density = args.crowd_density
 
 val_mean_ret = {}
