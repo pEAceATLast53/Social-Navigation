@@ -10,27 +10,19 @@ class PathGenerator:
     def __init__(self, radius, res): 
         self.map_img = None
         self.g = None
-        self.map_name = None
-        self.res = res
-        self.radius = int(radius * 100 / self.res)
-        self.radius_actual = int(radius * 100)
         self.obstacle_graph = None
-        self.data_dir = 'data'
 
-    def load_trav_map(self, map_name):
-        self.map_name = map_name
-        self.map_img = cv2.imread(os.path.join(self.data_dir, 'maps', map_name), cv2.IMREAD_GRAYSCALE)
+        self.res = res
+        self.scale = self.res * 0.01
+        self.inv_scale = 100 / self.res
 
-    def load_graph(self, map_name):
-        self.map_name = map_name
-        if os.path.exists(os.path.join(self.data_dir, 'graphs_'+str(self.res)+'_'+str(self.radius_actual), map_name.replace('png', 'dat.gz'))):
-            self.g = joblib.load(os.path.join(self.data_dir, 'graphs_'+str(self.res)+'_'+str(self.radius_actual), map_name.replace('png', 'dat.gz')))
-        else:
-            self.load_trav_map(map_name)
-            self.build_graph()
+        self.radius = int(radius * self.inv_scale)
 
-    def build_graph(self):
-        assert self.map_img is not None
+    def load_graph(self, graph_dir):
+        self.g = joblib.load(graph_dir)
+
+    def build_graph(self, map_dir):
+        self.map_img = cv2.imread(map_dir, cv2.IMREAD_GRAYSCALE)
         g = nx.Graph()
         for i in range(self.map_img.shape[0] // self.radius):
             for j in range(self.map_img.shape[1] // self.radius):
@@ -71,8 +63,8 @@ class PathGenerator:
         largest_cc = max(nx.connected_components(g), key=len)
         self.g = g.subgraph(largest_cc).copy()
 
-    def build_obstacle_graph(self, threshold):
-        assert self.map_img is not None
+    def build_obstacle_graph(self, map_dir, threshold):
+        self.map_img = cv2.imread(map_dir, cv2.IMREAD_GRAYSCALE)
         g = nx.Graph()
         for i in range(self.map_img.shape[0] // self.radius):
             for j in range(self.map_img.shape[1] // self.radius):

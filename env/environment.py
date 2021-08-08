@@ -90,7 +90,7 @@ class Env:
             self.map_img = cv2.imread(os.path.join(self.map_dir, map_name), cv2.IMREAD_GRAYSCALE)
             if self.render: self.map_render = cv2.cvtColor(self.map_img.transpose(1,0), cv2.COLOR_GRAY2RGB)
 
-            self.path_generator.g = joblib.load(os.path.join(self.graph_dir, self.map_name.replace('png', 'dat.gz')))
+            self.path_generator.load_graph(os.path.join(self.graph_dir, self.map_name.replace('png', 'dat.gz')))
 
             obstacles = joblib.load(os.path.join(self.obstacle_dir, self.map_name.replace('png', 'dat.gz')))
         
